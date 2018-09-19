@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>Blog</title>
+</head>
+<body onload="displayCommentsOnLoad()">
+	<h3>This is a great blog post</h3>
+	<div id="content">
+		I like to write about technology because I want to get on the front page of hacker news.
+	</div>
+	<hr>
+	<div id="comments"></div>
+	<hr>
+	Add comment:
+	<input id="new_comment" type="text"><input type="submit" onclick="addComment()">
+</body>
+
+<script src="https://s3.amazonaws.com/stitch-sdks/js/bundles/4.0.0/stitch.js"></script>
+<script>
+	// Initialize the App Client
+	const client = stitch.Stitch.initializeDefaultAppClient("blogtutorial-nhrvq");
+		
+	// Get a MongoDB Service Client
+	const mongodb = client.getServiceClient(
+		stitch.RemoteMongoClient.factory,
+		"mongodb-atlas"
+	);
+		
+	// Get a reference to the blog database
+	const db = mongodb.db("blog");
+		
+	// Displaying data from the db
+	const displayComments = () => {
+		db.collection("comments").find({}, {limit: 1000}).asArray()
+		.then(docs => docs.map(doc => `<div>${doc.comment}</div>`))
+		.then(comments => document.getElementById("comments").innerHTML = comments)
+	}
+	
+	// Login with AnonymousCredentials
+	const displayCommentsOnLoad = () => {
+		client.auth.loginWithCredential(new stitch.AnonymousCredential())
+		.then(displayComments)
+		.catch(console.error);
+	}
+	
+	// Adding new comments
+	const addComment = () => {
+		const newComment = document.getElementById("new_comment");
+		console.log("add comment", client.auth.user.id)
+		db.collection("comments").insertOne({ owner_id : client.auth.user.id, comment: newComment.value })
+		.then(displayComments);
+		newComment.value = "";
+	}
+</script>
+</html>
+
+
